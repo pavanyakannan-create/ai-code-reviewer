@@ -56,15 +56,3 @@ graph.add_edge("review_security", "summarize")
 graph.add_edge("summarize", END)
 
 app_graph = graph.compile()
-
-# 4. Run it
-sample_code = "def add(a, b):\n  return a+b"
-result = app_graph.invoke({
-    "code": sample_code,
-    "style_review": "",
-    "bug_review": "",
-    "security_review": "",
-    "summary": ""
-})
-
-print(result["summary"])
