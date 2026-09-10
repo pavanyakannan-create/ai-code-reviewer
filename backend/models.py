@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from database import Base
 
@@ -10,6 +11,8 @@ class User(Base):
     hashed_password = Column(String(255), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
+    reviews = relationship("Review", back_populates="owner")
+
 class Review(Base):
     __tablename__ = "reviews"
 
@@ -17,3 +20,6 @@ class Review(Base):
     code_snippet = Column(Text, nullable=False)
     review_result = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+
+    owner = relationship("User", back_populates="reviews")

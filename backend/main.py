@@ -91,7 +91,8 @@ def review_code(
 
     review = models.Review(
         code_snippet=input.code,
-        review_result=result["summary"]
+        review_result=result["summary"],
+        user_id=current_user.id
     )
     db.add(review)
     db.commit()
