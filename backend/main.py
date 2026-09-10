@@ -1,11 +1,12 @@
 from fastapi import FastAPI, Depends, HTTPException
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from database import Base, engine, get_db
 import models
 from graph import app_graph
-from auth import hash_password, verify_password, create_access_token
+from auth import hash_password, verify_password, create_access_token, decode_access_token
 
 Base.metadata.create_all(bind=engine)
 
@@ -18,6 +19,23 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+bearer_scheme = HTTPBearer()
+
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+    db: Session = Depends(get_db)
+) -> models.User:
+    token = credentials.credentials
+    try:
+        username = decode_access_token(token)
+    except ValueError:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+    user = db.query(models.User).filter(models.User.username == username).first()
+    if user is None:
+        raise HTTPException(status_code=401, detail="User not found")
+    return user
 
 class CodeInput(BaseModel):
     code: str
@@ -57,7 +75,11 @@ def login(user: UserCreate, db: Session = Depends(get_db)):
     return {"access_token": token, "token_type": "bearer"}
 
 @app.post("/review")
-def review_code(input: CodeInput, db: Session = Depends(get_db)):
+def review_code(
+    input: CodeInput,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
     result = app_graph.invoke({
         "code": input.code,
         "language": input.language,
