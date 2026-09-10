@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from database import Base, engine, get_db
@@ -9,8 +10,17 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 class CodeInput(BaseModel):
     code: str
+    language: str
 
 @app.get("/health")
 def health_check():
@@ -20,6 +30,7 @@ def health_check():
 def review_code(input: CodeInput, db: Session = Depends(get_db)):
     result = app_graph.invoke({
         "code": input.code,
+        "language": input.language,
         "style_review": "",
         "bug_review": "",
         "security_review": "",
